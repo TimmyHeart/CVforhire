@@ -83,9 +83,9 @@ unet = build_unet_gguf_native(
 
 | Model | Format | VRAM / RAM / Filepage Usages | Status | Time from Start to Output |
 | :--- | :--- | :--- | :--- | :--- |
-| **Wan 2.2 (14B)** | FP16 | 5GB / 16GB / 50~70GB | Không OOM | ~45 minutes |
-| **Wan 2.2 (14B)** | Q4_K_M | 5GB / 16GB / 40GB | Tốt | ~25 minutes |
-| **SDXL** | Q8_0 | 5GB / 16GB / 30GB | Tốt | ~30 minutes |
+| **Wan 2.2 (14B)** | FP16 | 5GB / 16GB / 50~70GB | Không OOM | ~4 hours |
+| **Wan 2.2 (14B)** | Q4_K_M | 5GB / 16GB / 40GB | Tốt | ~2 hours |
+| **SDXL** | Q8_0 | 5GB / 16GB / 30GB | Tốt | ~45 minutes |
 
 ---
 
