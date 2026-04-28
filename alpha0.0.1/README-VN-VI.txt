@@ -43,9 +43,9 @@ Cảm hứng: Dựa trên các dự án mã nguồn mở của ggml, llama.cpp-P
 #################################################################################################################################################################################################
 #                                                                                                                                                                                               #
 #Model                 Format           VRAM/RAM/filepage Usages                Status            Time from start to output                                                                     #
-#Wan 2.2 (14B)         FP16               5GB/16GB/50~70GB                    không OOM                  45 minutes                                                                             #
-#Wan 2.2 (14B)        Q4_K_M              5GB/16GB/40GB                         Tốt                     25 minutes                                                                              #
-#SDXL                  Q8_0               5GB/16GB/30GB                         Tốt                      30 minutes                                                                             #
+#Wan 2.2 (14B)         FP16               5GB/16GB/50~70GB                    không OOM                  ~4 hours                                                                               #
+#Wan 2.2 (14B)        Q4_K_M              5GB/16GB/40GB                         Tốt                      ~2 hours                                                                               #
+#SDXL                  Q8_0               5GB/16GB/30GB                         Tốt                      ~45 minutes                                                                            #
 #                                                                                                                                                                                               #
 #                                       CONFIG đã test :                                                                                                                                        #
 #    "wan_num_frames":          81,                                                                                                                                                             #
@@ -57,7 +57,7 @@ Cảm hứng: Dựa trên các dự án mã nguồn mở của ggml, llama.cpp-P
 #    "lora_name":               "",                                                                                                                                                             #
 #    "lora_alpha":              0.8,                                                                                                                                                            #
 #    # Kích thước mỗi shard khi convert. 4GB = peak RAM ~4GB lúc convert.                                                                                                                       #
-#    # Giảm xuống 2 nếu máy hay OOM lúc convert.                                                                                                                                                #
+#    # Tuy thời gian render và load khá lâu nhưng đảm bảo tuyệt đối không OOM.                                                                                                                  #
 #    "shard_size_gb":           4.0,                                                                                                                                                            #
 #                                                                                                                                                                                               #
 #                                                                                                                                                                                               #
