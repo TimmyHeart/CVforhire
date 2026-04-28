@@ -16,7 +16,7 @@
 ### 📖 Giới thiệu
 **AIO-GGUF Backend V5** là một giải pháp toàn diện được thiết kế để chạy các mô hình AI khổng lồ (như **Wan 2.2 14B**, **Stable Diffusion XL**) trên phần cứng có tài nguyên hạn chế. 
 
-Dự án đã thực hiện thành công trên phần cứng **GPU 40HX 8GB (Mod PCIe 1.1 x16)**, sử dụng môi trường **CUDA 11.8** với backend từ Driver **460.89** là CU112
+Dự án đã thực hiện thành công trên phần cứng **GPU CMP 40HX 8GB (Mod PCIe 1.1 x16)**, sử dụng môi trường **CUDA 11.8** với backend từ Driver **460.89** là CU112
 
 ### 📖 Overview
 **AIO-GGUF Backend V5** is a comprehensive solution designed to run massive AI models (such as **Wan 2.2 14B** and **Stable Diffusion XL**) on resource-constrained hardware.
@@ -27,7 +27,7 @@ The project has been successfully deployed on **GPU 40HX 8GB (Modded PCIe 1.1 x1
 ### **I’m building a high-performance GGUF-to-Diffusers backend that leverages (llama.cpp/sd.cpp).dll to load and run quantized models directly through Diffusers. It's designed to be much lighter and faster than the native Safetensors pipeline, specifically addressing the current optimization gaps in Diffusers' GGUF implementation.**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Hardware-GPU%2040HX%208GB%20(PCIe%201.1%20x16)-orange">
+  <img src="https://img.shields.io/badge/Hardware-GPU%20CMP%2040HX%208GB%20(PCIe%201.1%20x16)-orange">
   <img src="https://img.shields.io/badge/CUDA-11.2%20(Driver%20460.89)-blue">
   <img src="https://img.shields.io/badge/Backend-GGUF%20Native-green">
 </p>
