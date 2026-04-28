@@ -1,5 +1,4 @@
-<p align="center"> **AIO-GGUF Backend (Version 5.0 Full)**</p>
-<p align="center">### **High-Performance GGUF Integration for Diffusers & Wan 2.2**</p>
+<p align="center">  Custom pipeline AIO-GGUF Backend for Diffusers</p>
 </p>
 <p align="center">
   <img src="https://img.shields.io/badge/Hardware-GPU%20CMP%2040HX%208GB%20(PCIe%201.1%20x16)-orange">
