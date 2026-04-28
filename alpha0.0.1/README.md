@@ -1,4 +1,4 @@
-#AIO-GGUF Backend (Version 5.0 Full)
+### **AIO-GGUF Backend (Version 5.0 Full)**
 ### **High-Performance GGUF Integration for Diffusers & Wan 2.2**
 
 <p align="center">
