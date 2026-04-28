@@ -1,4 +1,4 @@
-# 🧠 AIO-GGUF Backend (Version 5.0 Full)
+#AIO-GGUF Backend (Version 5.0 Full)
 ### **High-Performance GGUF Integration for Diffusers & Wan 2.2**
 
 <p align="center">
@@ -28,12 +28,11 @@
 **AIO-GGUF Backend V5** là một giải pháp toàn diện được thiết kế để chạy các mô hình AI khổng lồ (như **Wan 2.2 14B**, **Stable Diffusion XL**) trên phần cứng có tài nguyên hạn chế. 
 
 Dự án đã được thực hiện thành công trên phần cứng **GPU CMP 40HX 8GB (đã mod PCIe 1.1 x16)**, sử dụng môi trường **CUDA 11.8** với backend từ Driver **460.89 (CU 11.2)**.
-
 Hệ thống này phá vỡ rào cản bộ nhớ bằng cách thay thế các lớp `nn.Linear` tiêu chuẩn của HuggingFace Diffusers bằng các lớp `GGUFLinear` tùy chỉnh. Điều này cho phép thực thi trực tiếp các trọng số đã được nén (Quantized) từ file GGUF mà không cần giải nén toàn bộ vào VRAM.
 
 ---
 
-### ✨ Tính năng nổi bật (Key Features)
+### Tính năng nổi bật (Key Features) ### 
 * **Hybrid Execution Bridge:** Tự động chuyển đổi giữa nhân C++ (qua `sd.cpp-python` DLL) để đạt tốc độ tối đa và Python fallback để đảm bảo tính tương thích tuyệt đối.
 * **Wan 2.2 Native Support:** Xử lý hoàn hảo cấu trúc Tensor 5D đặc thù của mô hình Video Wan 2.2.
 * **CRITICAL-1 (Alias Mapping):** Tự động ánh xạ các layer alias (`self_attn` ↔ `attn1`) giúp tương thích với mọi bản checkpoint trên Civitai hoặc HuggingFace.
@@ -43,7 +42,7 @@ Hệ thống này phá vỡ rào cản bộ nhớ bằng cách thay thế các l
 
 ---
 
-### 🏗️ Kiến trúc hệ thống (Architecture)
+###  Kiến trúc hệ thống (Architecture) ### 
 * **GGMLTensor:** Lớp con của `torch.Tensor` đóng vai trò lưu trữ siêu dữ liệu nén.
 * **GGUFTensorRegistry:** Quản lý kho lưu trữ trọng số tập trung, ngăn chặn triệt để tình trạng rò rỉ bộ nhớ (memory leaks).
 * **GGUFLinear:** Module thay thế `nn.Linear`, thực hiện *Dequantize-on-the-fly* hoặc gọi trực tiếp qua DLL Bridge.
@@ -51,7 +50,7 @@ Hệ thống này phá vỡ rào cản bộ nhớ bằng cách thay thế các l
 
 ---
 
-### 🚀 Hướng dẫn sử dụng (Usage)
+###  Hướng dẫn sử dụng (Usage) ### 
 
 **1. Cài đặt môi trường:**
 ```bash
@@ -81,7 +80,7 @@ unet = build_unet_gguf_native(
 
 ---
 
-### 📊 Bảng hiệu suất (Performance & Memory Usage)
+###  Bảng hiệu suất (Performance & Memory Usage) ### 
 
 | Model | Format | VRAM / RAM / Filepage Usages | Status | Time from Start to Output |
 | :--- | :--- | :--- | :--- | :--- |
@@ -91,7 +90,7 @@ unet = build_unet_gguf_native(
 
 ---
 
-### ⚙️ Cấu hình đã thử nghiệm (Tested Configuration)
+###  Cấu hình đã thử nghiệm (Tested Configuration) ### 
 
 ```json
 {
@@ -106,4 +105,4 @@ unet = build_unet_gguf_native(
     "shard_size_gb": 4.0
 }
 ```
-> **Lưu ý:** `shard_size_gb` là kích thước của mỗi shard khi tiến hành convert. Với `4.0`, Peak RAM tiêu thụ sẽ rơi vào khoảng 4GB lúc convert. Hãy giảm xuống `2.0` nếu máy tính của bạn thường xuyên bị OOM (Out Of Memory) trong quá trình này.
+> **Lưu ý:** `shard_size_gb` là kích thước của mỗi shard khi tiến hành convert. Với mức `4.0`, Peak bộ nhớ tiêu thụ sẽ luôn luôn rơi vào 4GB lúc nạp model để chống OOM, hiện cũng đã tích hợp tính năng STREAM để giảm tối đa và có tích hợp thêm disk_offload. Bạn có thể giữ nguyên mức `4.0` hoặc tăng lên cao tùy vào mức mà muốn hoặc nếu có cấu hình khỏe thì cứ nâng lên thoải mái, chi tiết thêm vui lòng đọc chi tiết trong file vì đã có ghi chi tiết từng chức năng. Dự án đã và đang được phát triển cá nhân độc lập và cũng là bản alpha đầu tay, mọi tối ưu và nâng cấp mới sẽ được cập nhật ngay sau khi được test ổn định.
