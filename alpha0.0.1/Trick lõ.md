@@ -1,28 +1,60 @@
-1. File GGUF (Trong ComfyUI Custom Nodes)
-Hàm sửa: forward_ggml_cast_weights
-Mục tiêu: Xử lý các lớp Linear (chiếm 70-80% khối lượng tính toán của model).
-Thao tác: * Phát hiện con card này chạy Float16 cực chậm (1067ms).
-Ép trọng số (weights) và dữ liệu đầu vào (input) lên Float32 ngay trước khi nhân ma trận.
-Tính xong thì ép ngược kết quả về Float16 để trả lại cho hệ thống.
-Kết quả: Tốc độ nhân ma trận tăng từ 1067ms lên 158ms.
+# Nhật Ký Tối Ưu Hóa Wan2.1 Cho NVIDIA CMP 40HX (8GB)
 
-2. File attention.py (File hệ thống cốt lõi của ComfyUI)
-Hàm sửa: attention_pytorch và attention_flash
-Đây là nơi chứa "bộ não" xử lý video của Wan2.1. Tôi đã thực hiện cú lừa ngoạn mục tại đây:
-Mục tiêu: Xử lý các lớp Attention (nơi dễ gây tràn VRAM nhất).
-Thao tác (Chiến thuật "Ve sầu thoát xác"):
-Lưu lại kiểu dữ liệu gốc (orig_dtype).
-Ép 3 ma trận Q, K, V lên Float32.
-Gọi hàm scaled_dot_product_attention (SDPA) của PyTorch.
-Lợi dụng việc PyTorch tự động kích hoạt Memory-Efficient Attention cho Float32 để vừa lấy tốc độ, vừa không bị nổ VRAM (OOM).
-Ép kết quả về lại orig_dtype trước khi thoát hàm.
-Kết quả: Tốc độ Attention tăng từ 271ms xuống 70ms.
+Báo cáo chi tiết quá trình tinh chỉnh mã nguồn ComfyUI để khắc phục lỗi hiệu năng Float16 trên kiến trúc Turing (CMP 40HX), giúp tăng tốc độ render video từ **792s/it** xuống còn **174s/it**.
 
-3. File sage_attention_patch.py (File ông gửi để nghiên cứu)
-Mục tiêu: Thử nghiệm Sage Attention.
-Tình trạng: Chúng ta đã xem xét nhưng quyết định không dùng Sage Attention cho Float32 vì thư viện này bắt buộc dùng Float16/Int8 cấp thấp, không phù hợp với chiến thuật "Float32 thần tốc" mà tôi đang đi. SDPA Float32 hiện tại đã quá đủ nhanh rồi.
-Tổng kết thành quả: ( gốc 789s/it )
-Thành phần             Trước khi sửa (Float16)   Sau khi sửa (Float32 Hack)                  Mức tăng trưởng
-Linear (GGUF),               1067ms               158ms                                         ~6.7 lần
-Attention (SDPA),            271ms                 70ms                                         ~3.8 lần
-Tổng thể (Wan2.2 14B)        376s/it              174s/it                                    Nhanh gấp 2.1 lần
+## 1. Tổng Quan Vấn Đề
+Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành cho đào coin) gặp hiện tượng "nghẽn cổ chai" cực nặng khi xử lý kiểu dữ liệu **Float16 (FP16)** trong AI, dẫn đến tốc độ cực chậm. Giải pháp là ép hệ thống tính toán trên **Float32 (FP32)** ở những điểm xung yếu nhưng vẫn phải bảo toàn VRAM.
+## 2. Các Tệp Tin Đã Chỉnh Sửa
+### 2.1. File: `GGUF Loader` (Custom Node)
+**Vị trí sửa:** Hàm xử lý trọng số GGUF.
+* **Nội dung sửa:**
+    ```python
+    def forward_ggml_cast_weights(self, input):
+        orig_dtype = input.dtype            
+        # Ép trọng số và input lên Float32 để kích hoạt CUDA Cores thuần túy
+        weight, bias = self.cast_bias_weight(input, dtype=torch.float32)            
+        input_float32 = input.to(torch.float32)            
+        if bias is not None:
+            bias = bias.to(torch.float32)            
+        # Thực hiện phép nhân tuyến tính ở tốc độ tối đa
+        result = torch.nn.functional.linear(input_float32, weight, bias)
+        # Trả về kiểu dữ liệu gốc để khớp với luồng ComfyUI
+        return result.to(orig_dtype)
+    ```
+* **Hiệu quả:** Giảm độ trễ lớp Linear từ **1067ms** xuống **158ms**.
+---
+### 2.2. File: `comfy/ldm/modules/attention.py`
+**Vị trí sửa:** Hàm `attention_pytorch` và `attention_flash`.
+Đây là cú hack quan trọng nhất để tối ưu bộ não Attention mà không làm nổ VRAM 8GB.
+* **Chiến thuật:** "Ve sầu thoát xác" (Lừa hệ thống dùng vỏ FP16 nhưng ruột tính bằng FP32).
+* **Nội dung sửa (Mẫu cho `attention_pytorch`):**
+    ```python
+    # Tại nhánh SDP_BATCH_LIMIT >= b:
+    orig_dtype = q.dtype
+    # Bơm steroid lên Float32
+    q_f32, k_f32, v_f32 = q.to(torch.float32), k.to(torch.float32), v.to(torch.float32)
+    mask_f32 = mask.to(torch.float32) if mask is not None else None    
+    # Kích hoạt Memory-Efficient Attention (Chống OOM cho Float32)
+    out_f32 = comfy.ops.scaled_dot_product_attention(
+        q_f32, k_f32, v_f32, attn_mask=mask_f32, dropout_p=0.0, is_causal=False
+    )    
+    # Thu hồi lại vỏ bọc Float16
+    out = out_f32.to(orig_dtype)
+    ```
+* **Hiệu quả:** Giảm độ trễ Attention từ **271ms** xuống **70ms**.
+---
+## 3. Kết Quả Thực Nghiệm
+| Chỉ số | Trước tối ưu (FP16 gốc) | Sau tối ưu (FP32 Hack) | Cải thiện |
+| :--- | :--- | :--- | :--- |
+| **Linear Latency** | 1067 ms | 158 ms | **~6.7x** |
+| **Attention Latency** | 271 ms | 70 ms | **~3.8x** |
+| **Wan2.2 Speed (s/it)** | **376.00 s/it** | **174.05 s/it** | **~2.1x** |
+
+### Tình trạng tài nguyên hệ thống (CMP 40HX 8GB):
+- **VRAM Sử dụng:** ~3.03 GB (Loaded) / 8.0 GB.
+- **VRAM Trống (Usable):** ~3.22 GB (Đủ an toàn cho FP32 SDPA).
+- **Trạng thái:** Chạy ổn định, không lỗi OOM, tốc độ tăng gấp đôi.
+- 
+## 4. Lưu Ý Quan Trọng
+1.  **Cập nhật ComfyUI:** Nếu cập nhật phiên bản mới, file `attention.py` có thể bị ghi đè. Cần kiểm tra và áp dụng lại bản hack nếu tốc độ bị tụt.
+2.  **Độ phân giải:** Do dùng FP32 cho Attention (tốn gấp đôi bộ nhớ so với FP16), không nên đẩy độ phân giải video quá cao (tránh tràn 8GB VRAM).
