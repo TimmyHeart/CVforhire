@@ -6,7 +6,7 @@
   <b>Đóng góp & Bản quyền thuộc về duy nhất cá nhân Trần Hiếu Nghĩa</b><br>
   <b>Ý tưởng & Kiến trúc:</b> Trần Hiếu Nghĩa (Nickname: Timmyo/V)<br>
   <b>Concept & Architecture:</b> Tran Hieu Nghia (Nickname: Timmyo/V)<br>
-  <b>Thực thi:</b> Hỗ trợ bởi hệ thống AI (Gemini 1.5 Pro, Claude 3.5, ChatGPT, Grok)<br>
+  <b>Thực thi:</b> Hỗ trợ bởi hệ thống AI (Gemini, Claude, ChatGPT, Grok)<br>
   <b>Implementation:</b> Assisted by AI Systems (Gemini, Claude, ChatGPT, Grok)<br>
   <b>Cảm hứng:</b> Dựa trên các dự án mã nguồn mở của <i>ggml, llama.cpp-Python, sd.cpp-Python, ComfyUI-GGUF, Diffusers</i>
 </p>
