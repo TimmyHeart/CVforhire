@@ -5,7 +5,7 @@ Báo cáo chi tiết quá trình tinh chỉnh mã nguồn ComfyUI để khắc p
 ## 1. Tổng Quan Vấn Đề
 Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành cho đào coin) gặp hiện tượng "nghẽn cổ chai" cực nặng khi xử lý kiểu dữ liệu **Float16 (FP16)** trong AI, dẫn đến tốc độ cực chậm. Giải pháp là ép hệ thống tính toán trên **Float32 (FP32)** ở những điểm xung yếu nhưng vẫn phải bảo toàn VRAM.
 ## 2. Các Tệp Tin Đã Chỉnh Sửa
-### 2.1. File: `GGUF Loader` (Custom Node)
+### 2.1. File: `GGUF Loader`
 **Vị trí sửa:** Hàm xử lý trọng số GGUF.
 * **Nội dung sửa:**
     ```python
@@ -23,7 +23,7 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
     ```
 * **Hiệu quả:** Giảm độ trễ lớp Linear từ **1067ms** xuống **158ms**.
 ---
-### 2.2. File: `comfy/ldm/modules/attention.py`
+### 2.2. File: `modules/attention.py`
 **Vị trí sửa:** Hàm `attention_pytorch` và `attention_flash`.
 Đây là cú hack quan trọng nhất để tối ưu bộ não Attention mà không làm nổ VRAM 8GB.
 * **Chiến thuật:** "Ve sầu thoát xác" (Lừa hệ thống dùng vỏ FP16 nhưng ruột tính bằng FP32).
@@ -56,6 +56,6 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
 - **Trạng thái:** Chạy ổn định, không lỗi OOM, tốc độ tăng gấp đôi.
 - **Tự thú nhẹ:** VRAM khi dùng Float32 nó sẽ ngốn còn dư 1.6G VRAM ( điểm an toàn ) để tối ưu hệ tốc độ thêm, trade-off cũng không quá tệ khi áp dụng BF16 như dưới.
 ## 4. Lưu Ý Quan Trọng
-1.  **Cập nhật ComfyUI:** Nếu cập nhật phiên bản mới, file `attention.py` có thể bị ghi đè. Cần kiểm tra và áp dụng lại bản hack nếu tốc độ bị tụt.
+1.  **Cập nhật:** Nếu cập nhật phiên bản mới, file `attention.py` có thể bị ghi đè. Cần kiểm tra và áp dụng lại bản hack nếu tốc độ bị tụt.
 2.  **Độ phân giải:** Do dùng FP32 cho Attention (tốn gấp đôi bộ nhớ so với FP16), không nên đẩy độ phân giải video quá cao (tránh tràn 8GB VRAM).
 3.  **More solution:** FP32 tốn bộ nhớ gấp đôi FP16 nhưng BF16 có cùng số bit, nhưng vì Turing không có nhân BF16 nên hệ thống mặc định đâm thẳng FP32 nhưng xuất BF16 ( có thể lợi dụng điều này).
