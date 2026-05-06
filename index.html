@@ -1,14 +1,1221 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-color-mode="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="google-site-verification" content="O1lN-H_busKotCxryT2GWtSCeqHLoodI6xKqyFLhAeY" />
-    <meta name="description" content="High-performance GGUF-to-Diffusers backend for Wan 2.2 14B and SDXL. Optimized for GPU CMP 40HX 8GB and CUDA 11.1.">
-    <title>AIO-GGUF Backend V5 - Tran Hieu Nghia</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="O1lN-H_busKotCxryT2GWtSCeqHLoodI6xKqyFLhAeY" />
+  <meta name="description" content="High-performance GGUF-to-Diffusers backend for Wan 2.2 14B and SDXL. Optimized for GPU CMP 40HX 8GB and CUDA 11.1.">
+  <title>TimmyHeart/Multi-framework-inference-runtime</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-canvas: #0d1117;
+      --bg-overlay: #161b22;
+      --bg-subtle: #21262d;
+      --bg-inset: #010409;
+      --border-default: #30363d;
+      --border-muted: #21262d;
+      --fg-default: #e6edf3;
+      --fg-muted: #848d97;
+      --fg-subtle: #6e7681;
+      --accent-fg: #58a6ff;
+      --accent-emphasis: #1f6feb;
+      --success-fg: #3fb950;
+      --attention-fg: #d29922;
+      --danger-fg: #f85149;
+      --purple-fg: #bc8cff;
+      --tab-active: #f78166;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      --font-body: 'Sora', -apple-system, sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--fg-default);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent-fg); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ─── NAVBAR ─── */
+    .navbar {
+      background: var(--bg-overlay);
+      border-bottom: 1px solid var(--border-default);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--fg-default);
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .gh-icon {
+      width: 28px; height: 28px;
+      fill: var(--fg-default);
+      flex-shrink: 0;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .breadcrumb .sep { color: var(--fg-subtle); }
+    .breadcrumb .owner { color: var(--fg-default); }
+    .breadcrumb .repo { color: var(--accent-fg); font-weight: 700; }
+
+    .navbar-badge {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      color: var(--fg-muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+    }
+
+    /* ─── TABS ─── */
+    .repo-tabs {
+      background: var(--bg-overlay);
+      border-bottom: 1px solid var(--border-default);
+      display: flex;
+      padding: 0 24px;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    .tab-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      color: var(--fg-muted);
+      font-size: 13px;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-item:hover { color: var(--fg-default); }
+    .tab-item.active {
+      color: var(--fg-default);
+      border-bottom-color: var(--tab-active);
+    }
+
+    .tab-item .tab-count {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: 20px;
+      padding: 0 6px;
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    /* ─── LAYOUT ─── */
+    .repo-layout {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: grid;
+      grid-template-columns: 1fr 296px;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .repo-layout { grid-template-columns: 1fr; }
+      .sidebar { order: -1; }
+    }
+
+    /* ─── FILE BROWSER ─── */
+    .panel {
+      background: var(--bg-overlay);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-subtle);
+    }
+
+    .panel-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .commit-info {
+      color: var(--fg-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .commit-msg { color: var(--fg-default); font-weight: 500; }
+    .commit-hash {
+      font-family: var(--font-mono);
+      color: var(--accent-fg);
+      font-size: 11px;
+      background: var(--bg-inset);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border-muted);
+      transition: background 0.1s;
+      gap: 12px;
+    }
+
+    .file-row:last-child { border-bottom: none; }
+    .file-row:hover { background: var(--bg-subtle); }
+
+    .file-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .file-name {
+      flex: 1;
+      color: var(--accent-fg);
+      font-size: 13px;
+    }
+    .file-name:hover { text-decoration: underline; }
+
+    .file-commit { color: var(--fg-muted); font-size: 12px; flex: 2; }
+    .file-date { color: var(--fg-muted); font-size: 12px; text-align: right; min-width: 90px; }
+
+    /* ─── README ─── */
+    .readme-section {
+      margin-top: 16px;
+    }
+
+    .readme-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-subtle);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .readme-body {
+      padding: 24px 32px;
+      line-height: 1.75;
+    }
+
+    .readme-body h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-default);
+      color: var(--fg-default);
+    }
+
+    .readme-body h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 24px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-muted);
+      color: var(--fg-default);
+    }
+
+    .readme-body h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      color: var(--fg-default);
+    }
+
+    .readme-body p { margin-bottom: 14px; color: var(--fg-default); }
+    .readme-body ul { padding-left: 22px; margin-bottom: 14px; }
+    .readme-body li { margin-bottom: 6px; }
+
+    .readme-body code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--purple-fg);
+    }
+
+    .readme-body pre {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin-bottom: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--fg-default);
+    }
+
+    .readme-body pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 4px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      height: 20px;
+    }
+
+    .badge-label {
+      background: #555;
+      color: #fff;
+      padding: 0 8px;
+    }
+
+    .badge-value {
+      color: #fff;
+      padding: 0 8px;
+    }
+
+    .badge-cuda { background: #76b900; }
+    .badge-python { background: #3776ab; }
+    .badge-cu { background: #1f6feb; }
+    .badge-gpu { background: #9b59b6; }
+    .badge-ver { background: #e74c3c; }
+
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(31,111,235,0.12), rgba(188,140,255,0.08));
+      border: 1px solid rgba(88,166,255,0.3);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+
+    .result-box {
+      background: linear-gradient(135deg, rgba(63,185,80,0.12), rgba(214,41,118,0.05));
+      border: 1px solid rgba(63,185,80,0.35);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      margin: 16px 0;
+    }
+
+    .result-box strong { color: var(--success-fg); font-size: 18px; }
+
+    .warn-box {
+      background: rgba(210,153,34,0.1);
+      border: 1px solid rgba(210,153,34,0.4);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      margin: 12px 0;
+      color: var(--attention-fg);
+      font-size: 13px;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar-section {
+      margin-bottom: 20px;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--fg-default);
+      margin-bottom: 10px;
+    }
+
+    .sidebar-desc {
+      color: var(--fg-muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    .stat-row svg { fill: var(--fg-muted); width: 16px; height: 16px; flex-shrink: 0; }
+    .stat-row strong { color: var(--fg-default); }
+
+    .release-card {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+
+    .release-card:hover { border-color: var(--accent-fg); }
+
+    .release-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--success-fg);
+      background: rgba(63,185,80,0.15);
+      border: 1px solid rgba(63,185,80,0.4);
+      border-radius: 20px;
+      padding: 1px 8px;
+      margin-bottom: 4px;
+    }
+
+    .release-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-fg);
+    }
+
+    .release-card-date {
+      font-size: 11px;
+      color: var(--fg-subtle);
+      margin-top: 2px;
+    }
+
+    .latest-badge {
+      background: rgba(31,111,235,0.2);
+      border: 1px solid rgba(31,111,235,0.5);
+      color: var(--accent-fg);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .lang-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: #3178c6;
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    .lang-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .lang-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #3178c6;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border-default);
+      margin: 16px 0;
+    }
+
+    /* ─── RELEASES PAGE ─── */
+    .releases-section {
+      margin-top: 20px;
+    }
+
+    .releases-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .releases-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .release-entry {
+      background: var(--bg-overlay);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .release-entry-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-subtle);
+    }
+
+    .release-entry-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--fg-default);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .release-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .release-body {
+      padding: 16px 20px;
+    }
+
+    .assets-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .asset-count {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: 20px;
+      padding: 0 8px;
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .assets-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .asset-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      transition: background 0.1s;
+      border: 1px solid transparent;
+    }
+
+    .asset-item:hover {
+      background: var(--bg-subtle);
+      border-color: var(--border-default);
+    }
+
+    .asset-icon { width: 16px; height: 16px; flex-shrink: 0; fill: var(--fg-muted); }
+
+    .asset-name {
+      flex: 1;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-fg);
+      word-break: break-all;
+    }
+
+    .asset-name:hover { text-decoration: underline; }
+
+    .asset-hash {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--fg-subtle);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg-inset);
+      display: none;
+    }
+
+    .asset-item:hover .asset-hash { display: inline; }
+
+    .asset-size {
+      font-size: 11px;
+      color: var(--fg-subtle);
+      text-align: right;
+      min-width: 60px;
+    }
+
+    .asset-download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-emphasis);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .asset-download-btn:hover { background: #388bfd; text-decoration: none; }
+
+    .asset-section-divider {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--fg-subtle);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 12px 2px;
+    }
+
+    .asset-group {
+      background: var(--bg-inset);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-muted);
+    }
+
+    /* ─── TOP GLOW ─── */
+    .top-glow {
+      position: fixed;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-fg), var(--purple-fg), transparent);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    /* ─── SECTION TOGGLE ─── */
+    .section-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      text-align: center;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--fg-muted);
+      transition: all 0.15s;
+      background: transparent;
+      border: none;
+    }
+
+    .toggle-btn.active {
+      background: var(--bg-overlay);
+      color: var(--fg-default);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .toggle-btn:hover:not(.active) { color: var(--fg-default); }
+
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      border-top: 1px solid var(--border-default);
+      background: var(--bg-overlay);
+      padding: 20px 24px;
+      text-align: center;
+      color: var(--fg-subtle);
+      font-size: 12px;
+      margin-top: 40px;
+    }
+
+    .footer a { color: var(--fg-muted); }
+
+    /* animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .repo-layout { animation: fadeIn 0.4s ease; }
+
+    /* copy tooltip */
+    .copy-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--success-fg);
+      color: #000;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.2s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .copy-toast.show { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
 <body>
-    <h1>🔗 Official Repository: <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime">Multi-framework-inference-runtime</a></h1>
-    <p>Dự án của Trần Hiếu Nghĩa (Timmyo/V)</p>
-    <p>AIO-GGUF Backend V5 cho Wan 2.2 14B và SDXL.</p>
+
+<div class="top-glow"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-logo">
+    <svg class="gh-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+    <span>GitHub</span>
+  </div>
+  <div class="breadcrumb">
+    <a href="https://github.com/TimmyHeart" class="owner">TimmyHeart</a>
+    <span class="sep">/</span>
+    <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime" class="repo">Multi-framework-inference-runtime</a>
+  </div>
+  <div class="navbar-badge">Public</div>
+</nav>
+
+<!-- TABS -->
+<div class="repo-tabs">
+  <div class="tab-item active" onclick="switchView('code')">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.75C4 .784 4.784 0 5.75 0h5a.75.75 0 0 1 .53.22l3.5 3.5c.141.14.22.331.22.53v9.25A1.75 1.75 0 0 1 13.25 15h-7.5A1.75 1.75 0 0 1 4 13.25Zm1.75-.25a.25.25 0 0 0-.25.25v11.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+    Code
+  </div>
+  <a class="tab-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/issues" target="_blank">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/></svg>
+    Issues
+  </a>
+  <a class="tab-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/pulls" target="_blank">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354Z"/></svg>
+    Pull requests
+  </a>
+  <div class="tab-item" onclick="switchView('releases')">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7.47.22a.75.75 0 0 1 1.06 0l6.75 6.747a.75.75 0 0 1 0 1.06l-6.75 6.75a.75.75 0 0 1-1.06 0l-6.75-6.75a.75.75 0 0 1 0-1.06Zm-5.69 7.277 5.94 5.94 5.94-5.94L8 1.557Z"/></svg>
+    Releases
+    <span class="tab-count">1</span>
+  </div>
+  <a class="tab-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/actions" target="_blank">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 9.75v.5a.75.75 0 0 1-1.5 0v-.5a.75.75 0 0 1 1.5 0ZM8 9a.75.75 0 0 0-.75.75v.5a.75.75 0 0 0 1.5 0v-.5A.75.75 0 0 0 8 9Zm2.25.75v.5a.75.75 0 0 0 1.5 0v-.5a.75.75 0 0 0-1.5 0Z"/><path d="M3.25 1A2.25 2.25 0 0 0 1 3.25v9.5A2.25 2.25 0 0 0 3.25 15h9.5A2.25 2.25 0 0 0 15 12.75v-9.5A2.25 2.25 0 0 0 12.75 1ZM2.5 3.25a.75.75 0 0 1 .75-.75h9.5a.75.75 0 0 1 .75.75v2.5H2.5Zm0 4H6v5.25H3.25a.75.75 0 0 1-.75-.75Zm5 5.25V7.25h5.5v5.5a.75.75 0 0 1-.75.75Z"/></svg>
+    Actions
+  </a>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="repo-layout">
+  <main>
+    <!-- VIEW TOGGLE -->
+    <div class="section-toggle">
+      <button class="toggle-btn active" onclick="switchView('code')" id="btn-code">📁 Code & README</button>
+      <button class="toggle-btn" onclick="switchView('releases')" id="btn-releases">📦 Releases & Downloads</button>
+    </div>
+
+    <!-- ═══ CODE VIEW ═══ -->
+    <div class="view-section active" id="view-code">
+
+      <!-- File browser -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M1.75 1h4.5a.75.75 0 0 1 0 1.5h-4.5a.25.25 0 0 0-.25.25v10.5a.25.25 0 0 0 .25.25h12.5a.25.25 0 0 0 .25-.25V6.177l-1.25-1.25V5.5a.75.75 0 0 1-.75-.75V3.5a.25.25 0 0 0-.25-.25h-1V1.75A1.75 1.75 0 0 1 14.25 0H12.5A1.75 1.75 0 0 1 10.75 1.75v1.5h-1a1.75 1.75 0 0 1-1.75-1.75V.75A.75.75 0 0 1 9.5 0h3.75C14.768 0 16 1.232 16 2.75v1.5c0 .38-.303.69-.68.718l1.43 1.43v7.352A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1Z"/></svg>
+            <strong>main</strong>
+            <span style="color:var(--fg-subtle)">▾</span>
+            <span style="color:var(--fg-subtle);margin-left:8px">3 files, 1 folder</span>
+          </div>
+          <div class="commit-info">
+            <span class="commit-msg">Update README.md</span>
+            <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/commit/5b59992" target="_blank" class="commit-hash">5b59992</a>
+            <span>· May 4, 2026</span>
+          </div>
+        </div>
+
+        <!-- rows -->
+        <a class="file-row" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/blob/main/diffusers_loader_advanced.py" target="_blank">
+          <svg class="file-icon" viewBox="0 0 16 16" fill="#3776ab"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+          <span class="file-name">diffusers_loader_advanced.py</span>
+          <span class="file-commit">Rename wan_comfy_v6.py to diffusers_loader_advanced.py</span>
+          <span class="file-date">May 4, 2026</span>
+        </a>
+        <a class="file-row" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/blob/main/key.png" target="_blank">
+          <svg class="file-icon" viewBox="0 0 16 16" fill="#e67e22"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+          <span class="file-name">key.png</span>
+          <span class="file-commit">Add files via upload</span>
+          <span class="file-date">Apr 24, 2026</span>
+        </a>
+        <a class="file-row" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/blob/main/red%20knight.png" target="_blank">
+          <svg class="file-icon" viewBox="0 0 16 16" fill="#e67e22"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+          <span class="file-name">red knight.png</span>
+          <span class="file-commit">Add files via upload</span>
+          <span class="file-date">Apr 24, 2026</span>
+        </a>
+        <a class="file-row" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/blob/main/README.md" target="_blank">
+          <svg class="file-icon" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+          <span class="file-name">README.md</span>
+          <span class="file-commit">Update README.md</span>
+          <span class="file-date">May 4, 2026</span>
+        </a>
+      </div>
+
+      <!-- README -->
+      <div class="readme-section panel" style="margin-top:16px">
+        <div class="readme-header">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/></svg>
+          README.md
+          <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/blob/main/README.md" target="_blank" style="margin-left:auto;font-size:12px;color:var(--fg-muted)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.609Z"/></svg>
+            Edit
+          </a>
+        </div>
+        <div class="readme-body">
+
+          <h1>🛡️ Thông tin dự án / Project Info</h1>
+          <div class="badge-row">
+            <span class="badge"><span class="badge-label">CUDA</span><span class="badge-value badge-cuda">11.8</span></span>
+            <span class="badge"><span class="badge-label">Python</span><span class="badge-value badge-python">3.9 / 3.10</span></span>
+            <span class="badge"><span class="badge-label">Backend</span><span class="badge-value badge-cu">CU111 / CU112</span></span>
+            <span class="badge"><span class="badge-label">GPU</span><span class="badge-value badge-gpu">CMP 40HX 8GB</span></span>
+            <span class="badge"><span class="badge-label">Model</span><span class="badge-value badge-ver">Wan 2.2 14B</span></span>
+          </div>
+
+          <div class="highlight-box">
+            <p>This project is a personal initiative. I am open to further discussions and collaborations. Please contact me directly for technical details and the latest updates.</p>
+            <p><strong>Contribution &amp; Copyright © Solely owned by Tran Hieu Nghia</strong><br>
+            Đóng góp &amp; Bản quyền thuộc về duy nhất cá nhân <strong>Trần Hiếu Nghĩa</strong></p>
+            <ul>
+              <li>💡 <strong>Ý tưởng &amp; Kiến trúc / Concept &amp; Architecture:</strong> Trần Hiếu Nghĩa (Timmyo/V)</li>
+              <li>🤖 <strong>Thực thi / Implementation:</strong> Assisted by AI Systems (Gemini, Claude, ChatGPT, Grok)</li>
+              <li>🌟 <strong>Cảm hứng / Inspiration:</strong> ggml, llama.cpp-Python, sd.cpp-Python, ComfyUI-GGUF, Diffusers</li>
+            </ul>
+          </div>
+
+          <h2>📖 Giới thiệu (Vietnamese)</h2>
+          <p><strong>AIO-GGUF Backend V5</strong> là một giải pháp toàn diện được thiết kế để chạy các mô hình AI (như <strong>Wan 2.2 14B</strong>, <strong>Stable Diffusion XL</strong>) trên phần cứng có tài nguyên hạn chế.</p>
+          <p>Dự án đã thực hiện thành công trên phần cứng <strong>GPU CMP 40HX 8GB (Mod PCIe 1.1 x16)</strong>, sử dụng môi trường <strong>CUDA 11.8</strong> với backend từ Driver <code>460.89</code> là CU112.</p>
+
+          <h2>📖 Overview (English)</h2>
+          <p><strong>AIO-GGUF Backend V5</strong> is a comprehensive solution designed to run massive AI models (such as <strong>Wan 2.2 14B</strong> and <strong>Stable Diffusion XL</strong>) on resource-constrained hardware.</p>
+          <p>The project has been successfully deployed on <strong>GPU 40HX 8GB (Modded PCIe 1.1 x16)</strong> hardware, utilizing a <strong>CUDA 11.8</strong> environment with backends powered by Driver 460.89 (CU112).</p>
+
+          <h2>🚀 Hành trình Tối ưu hóa: Từ Crash/1000s+ xuống 153s/it</h2>
+          <p>Dự án này là minh chứng cho việc bứt phá giới hạn vật lý của phần cứng cũ. Với một trong những mô hình AI mới nhất - Wan2.2 14B, băng thông chật hẹp của PCIe 1.1 x16 ban đầu đã gây ra tình trạng thắt cổ chai trầm trọng (1000s/it) và crash hệ thống. Các kỹ thuật lõi đã được áp dụng:</p>
+          <ul>
+            <li><strong>Vượt rào Băng thông với Pinned Memory (DMA):</strong> Viết lại luồng quản lý bộ nhớ ở cấp độ thấp, sử dụng bộ đệm cứng <code>pin_memory=True</code>. Kỹ thuật này ép hệ điều hành cấp phát bộ nhớ vật lý độc quyền, cho phép GPU rút dữ liệu trực tiếp (DMA) từ RAM hệ thống cực nhanh mà không qua xử lý trung gian của CPU.</li>
+            <li><strong>Tối ưu Lõi Attention cho Kiến trúc Turing:</strong> Tái cấu trúc hàm Scaled Dot-Product Attention (SDPA). Ép xử lý cục bộ, ép Tensor Cores phải hoạt động hết công suất.</li>
+            <li><strong>Kiểm soát luồng dữ liệu &amp; Batch Size tối đa:</strong> Loại bỏ các phép tính dư thừa bằng cách can thiệp sâu vào thông số CFG và KSampler.</li>
+          </ul>
+
+          <h2>🚀 Optimization Journey: From Crash/1000s+ down to 153s/it</h2>
+          <ul>
+            <li><strong>Bypassing Bandwidth Walls with Pinned Memory (DMA):</strong> Rewrote low-level memory management using a <code>pin_memory=True</code> buffer. Forces the OS to allocate page-locked physical memory, enabling Direct Memory Access without CPU overhead.</li>
+            <li><strong>Core Attention Tuning for Turing Architecture:</strong> Reconstructed the Scaled Dot-Product Attention (SDPA) mechanism. Bypassed native instruction set limitations of CMP 40HX GPU by forcing local processing, pushing Tensor Cores to maximum efficiency.</li>
+            <li><strong>Data Flow &amp; Batch Size Control:</strong> Eliminated redundant computations by deep-diving into CFG and KSampler parameters, keeping Batch Size minimal to halve the massive data load.</li>
+          </ul>
+
+          <div class="result-box">
+            <p>🔥 <strong>Kết quả / The Result:</strong></p>
+            <p>Từ việc không thể chạy nổi, hệ thống đã render thành công Video bằng mô hình Wan 2.2 14B (81 frames, 480x480, 32 FPS) với tốc độ <strong>153s/it</strong>.</p>
+            <p>From total system crashes → successfully generated Video using Wan 2.2 14B (81 frames, 480x480, 32 FPS) at a stable <strong style="color:var(--success-fg);font-size:20px">153s/it</strong>.<br>
+            A massive breakthrough on legacy PCIe 1.1 x16 — and optimization continues!</p>
+          </div>
+
+          <h2>🧠 AIO-GGUF Backend (Alpha V0.0.1)</h2>
+          <p>I'm building a high-performance GGUF-to-Diffusers backend that leverages <code>(llama.cpp/sd.cpp).dll</code> to load and run quantized models directly through Diffusers. It's designed to be much lighter and faster than the native Safetensors pipeline, specifically addressing the current optimization gaps in Diffusers' GGUF implementation.</p>
+
+          <pre><code># Frameworks supported:
+ggml · llama.cpp-Python · sd.cpp-Python · ComfyUI-GGUF · Diffusers
+
+# Hardware tested:
+GPU CMP 40HX 8GB  |  PCIe 1.1 x16 (modded)  |  CUDA 11.8  |  Driver 460.89
+
+# Models:
+Wan 2.2 14B  |  Stable Diffusion XL  |  Quantized GGUF variants</code></pre>
+
+          <div class="warn-box">
+            ⚠️ Alpha stage — APIs and interfaces may change. This is a research/optimization project targeting legacy CUDA hardware.
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /view-code -->
+
+    <!-- ═══ RELEASES VIEW ═══ -->
+    <div class="view-section" id="view-releases">
+      <div class="releases-section">
+        <div class="releases-header">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M7.47.22a.75.75 0 0 1 1.06 0l6.75 6.747a.75.75 0 0 1 0 1.06l-6.75 6.75a.75.75 0 0 1-1.06 0l-6.75-6.75a.75.75 0 0 1 0-1.06Zm-5.69 7.277 5.94 5.94 5.94-5.94L8 1.557Z"/></svg>
+          <h2 style="font-size:20px;font-weight:700;color:var(--fg-default);border:none;padding:0;margin:0">Releases</h2>
+          <span class="latest-badge">1 release</span>
+        </div>
+
+        <div class="release-entry">
+          <div class="release-entry-header">
+            <div class="release-entry-title">
+              <span>Custom wheel sd.cpp-0.4.6 | llama.cpp 3.20 for CU111-cp310-cp390</span>
+              <span class="latest-badge">Latest</span>
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--success-fg);background:rgba(63,185,80,0.15);border:1px solid rgba(63,185,80,0.4);border-radius:20px;padding:1px 10px;">CU111</span>
+            </div>
+            <div class="release-meta">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
+              <a href="https://github.com/TimmyHeart" target="_blank" style="color:var(--accent-fg)">TimmyHeart</a>
+              released on
+              <strong style="color:var(--fg-default)">04 May 2026 05:25</strong>
+              ·
+              <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/commit/5b59992" target="_blank" style="font-family:var(--font-mono);font-size:11px;color:var(--fg-muted)">5b59992</a>
+              · 5 commits to main since this release
+            </div>
+          </div>
+
+          <div class="release-body">
+            <div class="highlight-box" style="margin-bottom:16px">
+              <p><strong>Name:</strong> stable_diffusion_cpp_python CU111 for CMP 40HX · <strong>Version:</strong> 0.4.6</p>
+              <p><strong>Name:</strong> llama_cpp_python CU111 for CMP 40HX · <strong>Version:</strong> 0.3.20</p>
+            </div>
+
+            <div class="assets-header">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+              Assets
+              <span class="asset-count">20</span>
+            </div>
+
+            <div class="assets-grid">
+
+              <div class="asset-section-divider">🔧 Python Wheels — stable_diffusion_cpp_python (sd.cpp 0.4.6)</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/stable_diffusion_cpp_python-0.4.6-cp310-cp310-win_amd64.whl" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">stable_diffusion_cpp_python-0.4.6-cp310-cp310-win_amd64.whl</span>
+                  <span class="asset-hash" onclick="copyHash(event,'b1c04b670c78fdb59f228349ee7cdaeb62138652fa82be0956ef2bc3eb849556')">sha256 ↗</span>
+                  <span class="asset-size">196 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/stable_diffusion_cpp_python-0.4.6-cp310-cp310-win_amd64.whl" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/stable_diffusion_cpp_python-0.4.6-cp39-cp39-win_amd64.whl" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">stable_diffusion_cpp_python-0.4.6-cp39-cp39-win_amd64.whl</span>
+                  <span class="asset-hash" onclick="copyHash(event,'7ca26749d6072bb659af7c7db8fdcfdfd5a26d91da654f79808da92b2e7e20b5')">sha256 ↗</span>
+                  <span class="asset-size">196 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/stable_diffusion_cpp_python-0.4.6-cp39-cp39-win_amd64.whl" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+              <div class="asset-section-divider">🔧 Python Wheels — llama_cpp_python (llama.cpp 3.20)</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/b8685.CU111.llama_cpp_python-0.3.20-py3-none-win_amd64.whl" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">b8685.CU111.llama_cpp_python-0.3.20-py3-none-win_amd64.whl</span>
+                  <span class="asset-hash" onclick="copyHash(event,'07d7e17fef8966e01dd98f9c24a25fa57579d7175c4a3ca922479938777d65a7')">sha256 ↗</span>
+                  <span class="asset-size">130 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/b8685.CU111.llama_cpp_python-0.3.20-py3-none-win_amd64.whl" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.19-py3-none-win_amd64.whl" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">llama_cpp_python-0.3.19-py3-none-win_amd64.whl</span>
+                  <span class="asset-hash" onclick="copyHash(event,'b8ffe2f51f44a64eea4fe330d79d23123acca9da46409bc64cdd846170ee09fb')">sha256 ↗</span>
+                  <span class="asset-size">39.5 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.19-py3-none-win_amd64.whl" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.whl" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">llama_cpp_python-0.3.20-py3-none-win_amd64.whl</span>
+                  <span class="asset-hash" onclick="copyHash(event,'7a21a713a42d6941b0479b7b9c49a7e3595e7c99ce31b39db7603eee65d44999')">sha256 ↗</span>
+                  <span class="asset-size">130 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.whl" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.35-cp39-cp39-win_amd64.whl.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"/><path d="M7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.97a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.779a.749.749 0 1 1 1.06-1.06l1.97 1.97Z"/></svg>
+                  <span class="asset-name">llama_cpp_python-0.3.35-cp39-cp39-win_amd64.whl.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'80139bdde82d95258b8bd61c31e966d5a72a0bdd15dabe4b8fe9ff4ba8c280bb')">sha256 ↗</span>
+                  <span class="asset-size">127 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.35-cp39-cp39-win_amd64.whl.7z" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+              <div class="asset-section-divider">📦 7z Archives — llama_cpp_python (Turing / AMP variants)</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.CU111+Turing.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--attention-fg)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">llama_cpp_python-0.3.20-py3-none-win_amd64.CU111+Turing.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'9664ea3356d0d6a628f6550658e7aca364476bd1df60032384f30b3d7f24b6ee')">sha256 ↗</span>
+                  <span class="asset-size">128 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.CU111+Turing.7z" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.CU111-AMP.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--attention-fg)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">llama_cpp_python-0.3.20-py3-none-win_amd64.CU111-AMP.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'fab730cbbcd44c520e3292a02761eda45b3aeeebe865c6aa9ca2685edce1ba6e')">sha256 ↗</span>
+                  <span class="asset-size">122 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llama_cpp_python-0.3.20-py3-none-win_amd64.CU111-AMP.7z" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llamacpp.co.vmm.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--attention-fg)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">llamacpp.co.vmm.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'22f6297f2a064437ff39dafb6a701cf6e6db81e57c9b2b4ed557dd1aeb5b1530')">sha256 ↗</span>
+                  <span class="asset-size">40.1 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llamacpp.co.vmm.7z" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llamacpp.khong.co.vmm.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--attention-fg)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">llamacpp.khong.co.vmm.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'2adb6ec858b702e6dc5a40a51d1d458d7ce565237805cd0624e2a868b7301394')">sha256 ↗</span>
+                  <span class="asset-size">40.1 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/llamacpp.khong.co.vmm.7z" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+              <div class="asset-section-divider">📄 CUDA Logs & Config Files (.txt)</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/B.n.tham.kh.o.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">B.n.tham.kh.o.txt <span style="color:var(--fg-subtle);font-size:10px">(Bản tham khảo)</span></span>
+                  <span class="asset-hash" onclick="copyHash(event,'f96d24f5520bbbd91b3a7978c07bebb3d5fbd8920823a98e216048ae699eb772')">sha256 ↗</span>
+                  <span class="asset-size">2.1 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/B.n.tham.kh.o.txt" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/CUDA.dung.K_M.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">CUDA.dung.K_M.txt</span>
+                  <span class="asset-hash" onclick="copyHash(event,'e30177714355df99e226f98df9da0cd521f59dfaaedce38a96ba5b8a36bcfc2b')">sha256 ↗</span>
+                  <span class="asset-size">52.8 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/CUDA.dung.K_M.txt" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Cuda.sau.co.vmm.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">Cuda.sau.co.vmm.txt</span>
+                  <span class="asset-hash" onclick="copyHash(event,'e9a4c02b1b2d379c3c54dc5e71a039d2662df7d32c9b789e13357492b7619e5d')">sha256 ↗</span>
+                  <span class="asset-size">53.3 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Cuda.sau.co.vmm.txt" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/CUDA.sau.khong.vmm.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">CUDA.sau.khong.vmm.txt</span>
+                  <span class="asset-hash" onclick="copyHash(event,'1651cdf0814277346da5b22121cc79c69af34398a5ab2e5c630f787212a96afc')">sha256 ↗</span>
+                  <span class="asset-size">62.5 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/CUDA.sau.khong.vmm.txt" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Cuda.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">Cuda.txt</span>
+                  <span class="asset-hash" onclick="copyHash(event,'4d8bdf130f93d40ebe2038ae6e18a98f8bf4de235c32f73327a273d3dafab036')">sha256 ↗</span>
+                  <span class="asset-size">56.6 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Cuda.txt" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Vulkan.txt" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">Vulkan.txt</span>
+                  <span class="asset-hash" onclick="copyHash(event,'27651d2a74de7de4a36d4db53c4949fed5ef00ff902fc166f254408e4b6bca72')">sha256 ↗</span>
+                  <span class="asset-size">12.9 KB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/Vulkan.txt" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+              <div class="asset-section-divider">📦 Utilities & Tools</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/ffmpeg-4.4-full_build.7z" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--danger-fg)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">ffmpeg-4.4-full_build.7z</span>
+                  <span class="asset-hash" onclick="copyHash(event,'3b18ea042dcc0865435f1a03d2c363f7bfd7cf8b52a3081253bc9d6afd1d823f')">sha256 ↗</span>
+                  <span class="asset-size">39.4 MB</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/releases/download/CU111/ffmpeg-4.4-full_build.7z" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+              <div class="asset-section-divider">💾 Source Code</div>
+              <div class="asset-group">
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/archive/refs/tags/CU111.zip" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">Source code (zip)</span>
+                  <span class="asset-size">—</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/archive/refs/tags/CU111.zip" target="_blank">⬇ Download</a>
+                </a>
+                <a class="asset-item" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/archive/refs/tags/CU111.tar.gz" target="_blank">
+                  <svg class="asset-icon" viewBox="0 0 16 16" fill="var(--fg-muted)"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688Z"/></svg>
+                  <span class="asset-name">Source code (tar.gz)</span>
+                  <span class="asset-size">—</span>
+                  <a class="asset-download-btn" href="https://github.com/TimmyHeart/Multi-framework-inference-runtime/archive/refs/tags/CU111.tar.gz" target="_blank">⬇ Download</a>
+                </a>
+              </div>
+
+            </div><!-- /assets-grid -->
+          </div><!-- /release-body -->
+        </div><!-- /release-entry -->
+      </div>
+    </div><!-- /view-releases -->
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">About</div>
+      <div class="sidebar-desc">GGUF-based execution backend and model injection system for ComfyUI / Diffusers (WAN 2.2 14B support, quantized inference, performance optimization)</div>
+      <hr class="divider">
+      <div class="stat-row">
+        <svg viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+        <strong>0</strong> stars
+      </div>
+      <div class="stat-row">
+        <svg viewBox="0 0 16 16"><path d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.671 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.83.88 9.576.43 8.898a1.62 1.62 0 0 1 0-1.798c.45-.677 1.367-1.931 2.637-3.022C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.824.742-3.955 1.715-1.124.967-1.954 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z"/></svg>
+        <strong>1</strong> watching
+      </div>
+      <div class="stat-row">
+        <svg viewBox="0 0 16 16"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></svg>
+        <strong>0</strong> forks
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Releases <span class="latest-badge">1</span></div>
+      <div class="release-card" onclick="switchView('releases')" style="cursor:pointer">
+        <div class="release-tag">CU111</div>
+        <div class="release-card-title">
+          Custom wheel sd.cpp-0.4.6 | llama.cpp 3.20
+          <span class="latest-badge">Latest</span>
+        </div>
+        <div class="release-card-date">May 4, 2026 · 20 assets</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Languages</div>
+      <div class="lang-bar"></div>
+      <div class="lang-item">
+        <div class="lang-dot"></div>
+        <span><strong style="color:var(--fg-default)">Python</strong> &nbsp; 100.0%</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Contributors</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <a href="https://github.com/TimmyHeart" target="_blank">
+          <img src="https://avatars.githubusercontent.com/u/96120935?v=4" width="32" height="32" style="border-radius:50%;border:2px solid var(--border-default)" alt="TimmyHeart" onerror="this.src='https://github.githubassets.com/images/gravatars/gravatar-user-420.png'">
+        </a>
+        <div>
+          <a href="https://github.com/TimmyHeart" target="_blank" style="font-weight:600;font-size:13px">TimmyHeart</a><br>
+          <span style="font-size:11px;color:var(--fg-subtle)">Timmyo/V — Trần Hiếu Nghĩa</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="sidebar-section">
+      <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime" target="_blank"
+         style="display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:var(--accent-emphasis);color:#fff;border-radius:var(--radius-sm);font-weight:600;font-size:13px;transition:background 0.15s"
+         onmouseover="this.style.background='#388bfd'" onmouseout="this.style.background='var(--accent-emphasis)'">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="white"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </aside>
+</div>
+
+<footer class="footer">
+  <p>© 2026 GitHub, Inc. &nbsp;·&nbsp;
+  <a href="https://github.com/site/terms" target="_blank">Terms</a> &nbsp;·&nbsp;
+  <a href="https://github.com/site/privacy" target="_blank">Privacy</a> &nbsp;·&nbsp;
+  <a href="https://githubstatus.com" target="_blank">Status</a>
+  </p>
+  <p style="margin-top:6px;font-size:11px;color:var(--fg-subtle)">
+    Project by <strong style="color:var(--fg-muted)">Trần Hiếu Nghĩa (Timmyo/V)</strong> — AIO-GGUF Backend V5 for Wan 2.2 14B &amp; SDXL
+  </p>
+</footer>
+
+<div class="copy-toast" id="copy-toast">✓ SHA256 copied to clipboard</div>
+
+<script>
+  function switchView(v) {
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + v).classList.add('active');
+    document.getElementById('btn-' + v)?.classList.add('active');
+  }
+
+  function copyHash(e, hash) {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(hash).then(() => {
+      const t = document.getElementById('copy-toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    });
+  }
+</script>
 </body>
 </html>
