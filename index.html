@@ -1,74 +1,14 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Google Verification - PHẢI NẰM Ở ĐÂY -->
     <meta name="google-site-verification" content="ZzAOaZlKFp56KqYgYL6FGMX3dGndcmAZ9pRnCptQyLI" />
-    
-    <!-- SEO Metadata -->
     <meta name="description" content="High-performance GGUF-to-Diffusers backend for Wan 2.2 14B and SDXL. Optimized for GPU CMP 40HX 8GB and CUDA 11.1.">
-    <meta name="keywords" content="GGUF, Wan 2.2, Stable Diffusion, CUDA 11.1, CMP 40HX, Pinned Memory, DMA">
     <title>AIO-GGUF Backend V5 - Tran Hieu Nghia</title>
-
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 40px; color: #24292e; }
-        h1, h2, h3 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-        code { background-color: rgba(27,31,35,0.05); border-radius: 3px; padding: 0.2em 0.4em; font-family: monospace; }
-        blockquote { border-left: 0.25em solid #dfe2e5; color: #6a737d; margin: 0; padding: 0 1em; }
-        .center { text-align: center; }
-        .badge-container img { margin: 0 5px; }
-        hr { height: 0.25em; background-color: #e1e4e8; border: 0; margin: 24px 0; }
-        a { color: #0366d6; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>
 </head>
 <body>
-
-    <h2>🔗 Official Repository: <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime">github.com/TimmyHeart/Multi-framework-inference-runtime</a></h2>
-
-    <h3>🛡️ Thông tin dự án</h3>
-    <blockquote>
-        <em>This project is a personal initiative. I am open to further discussions and collaborations. Please contact me directly for technical details and the latest updates.</em>
-    </blockquote>
-
-    <div class="center">
-        <p>
-            <b>Contribution & Copyright © Solely owned by Tran Hieu Nghia</b><br>
-            <b>Đóng góp & Bản quyền thuộc về duy nhất cá nhân Trần Hiếu Nghĩa</b><br>
-            <b>Ý tưởng & Kiến trúc:</b> Trần Hiếu Nghĩa (Nickname: Timmyo/V)<br>
-            <b>Concept & Architecture:</b> Tran Hieu Nghia (Nickname: Timmyo/V)<br>
-            <b>Thực thi:</b> Hỗ trợ bởi hệ thống AI (Gemini, Claude, ChatGPT, Grok)<br>
-            <b>Implementation:</b> Assisted by AI Systems (Gemini, Claude, ChatGPT, Grok)<br>
-            <b>Cảm hứng:</b> Dựa trên các dự án mã nguồn mở của <i>ggml, llama.cpp-Python, sd.cpp-Python, ComfyUI-GGUF, Diffusers</i>
-        </p>
-    </div>
-
-    <hr>
-
-    <h3>📖 Giới thiệu</h3>
-    <p><b>AIO-GGUF Backend V5</b> là một giải pháp toàn diện được thiết kế để chạy các mô hình AI (như <b>Wan 2.2 14B</b>, <b>Stable Diffusion XL</b>) trên phần cứng có tài nguyên hạn chế.</p>
-    <p>Dự án đã thực hiện thành công trên phần cứng <b>GPU CMP 40HX 8GB (Mod PCIe 1.1 x16)</b>, sử dụng môi trường <b>CUDA 11.8</b> với backend từ Driver <b>460.89</b> là CU112.</p>
-
-    <h3>🚀 Hành trình Tối ưu hóa: Từ Crash/1000s+ xuống 153s/it</h3>
-    <ul>
-        <li><b>Vượt rào Băng thông với Pinned Memory (DMA):</b> Viết lại luồng quản lý bộ nhớ ở cấp độ thấp, sử dụng bộ đệm cứng <code>pin_memory=True</code>.</li>
-        <li><b>Tối ưu Lõi Attention cho Kiến trúc Turing:</b> Tái cấu trúc hàm Scaled Dot-Product Attention (SDPA).</li>
-        <li><b>Kiểm soát luồng dữ liệu & Batch Size tối đa:</b> Loại bỏ các phép tính dư thừa bằng cách can thiệp sâu vào thông số CFG và KSampler.</li>
-    </ul>
-    <p><b>🔥 Kết quả:</b> Render thành công Video bằng mô hình Wan 2.2 14B (81 frames, 480x480, FPS 32) với tốc độ <b>153s/it</b> trên chuẩn PCIe 1.1 x16.</p>
-
-    <hr>
-
-    <h1>🧠 AIO-GGUF Backend (Alpha V0.0.1)</h1>
-    <p>I’m building a high-performance GGUF-to-Diffusers backend that leverages (llama.cpp/sd.cpp).dll to load and run quantized models directly through Diffusers.</p>
-
-    <div class="center badge-container">
-        <img src="https://img.shields.io/badge/Hardware-GPU%20CMP%2040HX%208GB%20(PCIe%201.1%20x16)-orange" alt="Hardware">
-        <img src="https://img.shields.io/badge/CUDA-11.2%20(Driver%20460.89)-blue" alt="CUDA">
-        <img src="https://img.shields.io/badge/Backend-GGUF%20Native-green" alt="Backend">
-    </div>
-
+    <h1>🔗 Official Repository: <a href="https://github.com/TimmyHeart/Multi-framework-inference-runtime">Multi-framework-inference-runtime</a></h1>
+    <p>Dự án của Trần Hiếu Nghĩa (Timmyo/V)</p>
+    <p>AIO-GGUF Backend V5 cho Wan 2.2 14B và SDXL.</p>
 </body>
 </html>
