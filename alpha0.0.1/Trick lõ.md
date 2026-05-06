@@ -5,7 +5,7 @@ Báo cáo chi tiết quá trình tinh chỉnh mã nguồn ComfyUI để khắc p
 ## 1. Tổng Quan Vấn Đề
 Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành cho đào coin) gặp hiện tượng "nghẽn cổ chai" cực nặng khi xử lý kiểu dữ liệu **Float16 (FP16)** trong AI, dẫn đến tốc độ cực chậm. Giải pháp là ép hệ thống tính toán trên **Float32 (FP32)** ở những điểm xung yếu nhưng vẫn phải bảo toàn VRAM.
 ## 2. Các Tệp Tin Đã Chỉnh Sửa
-### 2.1. File: `GGUF Loader`
+### 2.1. Module: `GGUF Loader`
 **Vị trí sửa:** Hàm xử lý trọng số GGUF.
 * **Nội dung sửa:**
     ```python
@@ -23,7 +23,7 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
     ```
 * **Hiệu quả:** Giảm độ trễ lớp Linear từ **1067ms** xuống **158ms**.
 ---
-### 2.2. File: `modules/attention.py`
+### 2.2. module: `attention`
 **Vị trí sửa:** Hàm `attention_pytorch` và `attention_flash`.
 Đây là cú hack quan trọng nhất để tối ưu bộ não Attention mà không làm nổ VRAM 8GB.
 * **Chiến thuật:** "Ve sầu thoát xác" (Lừa hệ thống dùng vỏ FP16 nhưng ruột tính bằng FP32).
