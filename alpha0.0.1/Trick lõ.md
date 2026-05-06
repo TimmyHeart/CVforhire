@@ -1,6 +1,6 @@
 # Nhật Ký Tối Ưu Hóa Wan2.2 14B Cho NVIDIA CMP 40HX (8GB)
 
-Báo cáo chi tiết quá trình tinh chỉnh mã nguồn ComfyUI để khắc phục lỗi hiệu năng Float16 trên kiến trúc Turing (CMP 40HX), giúp tăng tốc độ render video từ **792s/it** xuống còn **174s/it**.
+Báo cáo chi tiết quá trình tinh chỉnh mã nguồn để khắc phục lỗi hiệu năng Float16 trên kiến trúc Turing (CMP 40HX), giúp tăng tốc độ render video từ **792s/it** xuống còn **174s/it**.
 
 ## 1. Tổng Quan Vấn Đề
 Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành cho đào coin) gặp hiện tượng "nghẽn cổ chai" cực nặng khi xử lý kiểu dữ liệu **Float16 (FP16)** trong AI, dẫn đến tốc độ cực chậm. Giải pháp là ép hệ thống tính toán trên **Float32 (FP32)** ở những điểm xung yếu nhưng vẫn phải bảo toàn VRAM.
