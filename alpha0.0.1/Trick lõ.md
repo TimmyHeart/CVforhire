@@ -58,3 +58,4 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
 ## 4. Lưu Ý Quan Trọng
 1.  **Cập nhật ComfyUI:** Nếu cập nhật phiên bản mới, file `attention.py` có thể bị ghi đè. Cần kiểm tra và áp dụng lại bản hack nếu tốc độ bị tụt.
 2.  **Độ phân giải:** Do dùng FP32 cho Attention (tốn gấp đôi bộ nhớ so với FP16), không nên đẩy độ phân giải video quá cao (tránh tràn 8GB VRAM).
+3.  **More solution:** FP32 tốn bộ nhớ gấp đôi FP16 nhưng BF16 có cùng số bit, nhưng vì Turing không có nhân BF16 nên hệ thống mặc định đâm thẳng FP32 nhưng xuất BF16 ( có thể lợi dụng điều này).
