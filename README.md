@@ -1,6 +1,6 @@
 <meta name="description" content="High-performance GGUF-to-Diffusers backend for Wan 2.2 14B and SDXL. Optimized for GPU CMP 40HX 8GB and CUDA 11.1.">
 <meta name="keywords" content="GGUF, Wan 2.2, Stable Diffusion, CUDA 11.1, CMP 40HX, Pinned Memory, DMA">
-## 🔗 Official Repository:(https://github.com/TimmyHeart/Multi-framework-inference-runtime)
+## 🔗 Official Repository:[github.com/TimmyHeart/Multi-framework-inference-runtime](https://github.com/TimmyHeart/Multi-framework-inference-runtime)
 
 
 ### 🛡️ Thông tin dự án
