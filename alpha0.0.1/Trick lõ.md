@@ -54,7 +54,7 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
 - **VRAM Sử dụng:** ~3.03 GB (Loaded) / 8.0 GB.
 - **VRAM Trống (Usable):** ~3.22 GB (Đủ an toàn cho FP32 SDPA).
 - **Trạng thái:** Chạy ổn định, không lỗi OOM, tốc độ tăng gấp đôi.
-- ** tự thú nhẹ:** VRAM khi dùng Float32 nó sẽ ngốn còn dư 1.6G VRAM ( điểm an toàn ) để tối ưu hệ tốc độ thêm, trade-off cũng không quá tệ khi áp dụng BF16 như dưới.
+- **Tự thú nhẹ:** VRAM khi dùng Float32 nó sẽ ngốn còn dư 1.6G VRAM ( điểm an toàn ) để tối ưu hệ tốc độ thêm, trade-off cũng không quá tệ khi áp dụng BF16 như dưới.
 ## 4. Lưu Ý Quan Trọng
 1.  **Cập nhật ComfyUI:** Nếu cập nhật phiên bản mới, file `attention.py` có thể bị ghi đè. Cần kiểm tra và áp dụng lại bản hack nếu tốc độ bị tụt.
 2.  **Độ phân giải:** Do dùng FP32 cho Attention (tốn gấp đôi bộ nhớ so với FP16), không nên đẩy độ phân giải video quá cao (tránh tràn 8GB VRAM).
