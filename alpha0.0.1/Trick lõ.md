@@ -1,4 +1,4 @@
-# Nhật Ký Tối Ưu Hóa Wan2.1 Cho NVIDIA CMP 40HX (8GB)
+# Nhật Ký Tối Ưu Hóa Wan2.2 14B Cho NVIDIA CMP 40HX (8GB)
 
 Báo cáo chi tiết quá trình tinh chỉnh mã nguồn ComfyUI để khắc phục lỗi hiệu năng Float16 trên kiến trúc Turing (CMP 40HX), giúp tăng tốc độ render video từ **792s/it** xuống còn **174s/it**.
 
@@ -18,7 +18,7 @@ Dòng card CMP 40HX (kiến trúc Turing tương tự RTX 2060/2070 nhưng dành
             bias = bias.to(torch.float32)            
         # Thực hiện phép nhân tuyến tính ở tốc độ tối đa
         result = torch.nn.functional.linear(input_float32, weight, bias)
-        # Trả về kiểu dữ liệu gốc để khớp với luồng ComfyUI
+        # Trả về kiểu dữ liệu gốc để khớp với luồng xử lí gốc ( tránh gây xung đột )
         return result.to(orig_dtype)
     ```
 * **Hiệu quả:** Giảm độ trễ lớp Linear từ **1067ms** xuống **158ms**.
